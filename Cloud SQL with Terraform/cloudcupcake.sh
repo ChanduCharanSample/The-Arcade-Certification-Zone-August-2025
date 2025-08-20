@@ -1,18 +1,15 @@
-
 gcloud auth list
 
 export ZONE=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-zone])")
 
 export REGION=$(gcloud compute project-info describe --format="value(commonInstanceMetadata.items[google-compute-default-region])")
 
+export PROJECT_ID=$(gcloud config get-value project)
+
 gcloud config set compute/zone "$ZONE"
 
 gcloud config set compute/region "$REGION"
 
-gsutil -m cp -r gs://spls/gsp233/* .
+gcloud sql instances create myinstance --project=$DEVSHELL_PROJECT_ID --region=$REGION --root-password=techcps --tier=db-n1-standard-4 --database-version=MYSQL_8_0
 
-cd tf-gke-k8s-service-lb
-
-terraform init
-
-terraform apply -var="region=$REGION" -var="location=$ZONE" --auto-approve
+gcloud sql databases create guestbook --instance=myinstance
