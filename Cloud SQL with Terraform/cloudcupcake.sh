@@ -3,14 +3,12 @@
 
 set -e  # Exit immediately on error
 
-# === VARIABLES ===
 PROJECT_ID=$(gcloud config get-value project)
 REGION=$(gcloud config get-value compute/region)
 if [ -z "$REGION" ]; then
   REGION="us-central1"
 fi
 
-# === TASK 1: Setup Directory and Fetch Files ===
 echo "Creating working directory..."
 mkdir -p sql-with-terraform
 cd sql-with-terraform
@@ -21,12 +19,10 @@ gsutil cp -r gs://spls/gsp234/gsp234.zip .
 echo "Unzipping files..."
 unzip -o gsp234.zip
 
-# === TASK 2: Update variables.tf ===
 echo "Updating variables.tf with Project ID and Region..."
 sed -i "s/project[[:space:]]*=.*/project = \"$PROJECT_ID\"/" variables.tf
 sed -i "s/region[[:space:]]*=.*/region = \"$REGION\"/" variables.tf
 
-# === TASK 3: Initialize and Apply Terraform ===
 echo "Initializing Terraform..."
 terraform init
 
