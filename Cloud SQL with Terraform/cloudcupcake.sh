@@ -8,7 +8,7 @@ set -e  # Exit on error
 PROJECT_ID=$(gcloud config get-value project)
 REGION=$(gcloud config get-value compute/region)
 
-# If region is not set in gcloud config, set a default
+# If region is not set, use default
 if [ -z "$REGION" ]; then
   REGION="us-central1"
 fi
@@ -23,7 +23,6 @@ gsutil cp -r gs://spls/gsp234/gsp234.zip .
 
 echo "Unzipping files..."
 unzip -o gsp234.zip
-cd gsp234
 
 # === TASK 2: Update variables.tf ===
 echo "Updating variables.tf with Project ID and Region..."
