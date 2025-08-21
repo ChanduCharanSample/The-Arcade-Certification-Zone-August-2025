@@ -1,14 +1,11 @@
 #!/bin/bash
 # Automate Cloud SQL Instance Creation using Terraform (GSP234)
-# Author: ChatGPT
 
-set -e  # Exit on error
+set -e  # Exit immediately on error
 
 # === VARIABLES ===
 PROJECT_ID=$(gcloud config get-value project)
 REGION=$(gcloud config get-value compute/region)
-
-# If region is not set, use default
 if [ -z "$REGION" ]; then
   REGION="us-central1"
 fi
