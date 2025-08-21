@@ -1,32 +1,14 @@
-#!/bin/bash
-set -e
 
-# Detect project
-PROJECT_ID=$(gcloud config get-value project)
 
-# Detect allowed regions (Org Policy)
-ALLOWED_REGIONS=$(gcloud org-policies describe constraints/gcp.resourceLocations \
-  --project="$PROJECT_ID" \
-  --format="value(listPolicy.allowedValues)" 2>/dev/null)
+mkdir sql-with-terraform
+cd sql-with-terraform
+gsutil cp -r gs://spls/gsp234/gsp234.zip .
 
-# Extract first allowed region
-REGION=$(echo "$ALLOWED_REGIONS" | sed 's/,/\n/g' | head -n 1 | sed 's/in://')
+unzip gsp234.zip
 
-# Fallback region
-if [[ -z "$REGION" ]]; then
-  REGION="us-east1"
-fi
+terraform init
 
-echo "Using region: $REGION"
+terraform plan -out=tfplan
 
-# Clean Terraform state
-rm -rf .terraform terraform.tfstate*
+terraform apply tfplan
 
-# Patch Terraform files
-sed -i "s/region *= *\"[a-z0-9-]*\"/region = \"$REGION\"/" *.tf || true
-sed -i "s/default *= *\"[a-z0-9-]*\"/default = \"$REGION\"/" *.tf || true
-
-# Initialize & Apply
-terraform init -upgrade
-terraform plan -out=tfplan -var="region=$REGION"
-terraform apply -auto-approve tfplan
