@@ -1,22 +1,23 @@
-# 1. Create working directory
-mkdir -p sql-with-terraform
-cd sql-with-terraform
+#!/bin/bash
+PROJECT_ID=$(gcloud config get-value project)
 
-# 2. Download Terraform files
-gsutil cp -r gs://spls/gsp234/gsp234.zip .
+# Fetch allowed locations
+gcloud org-policies describe constraints/gcp.resourceLocations \
+  --project=$PROJECT_ID \
+  --format="value(listPolicy.allowedValues)" > allowed_regions.txt
 
-# 3. Unzip contents
-unzip -o gsp234.zip
+REGION=$(cat allowed_regions.txt | tr -d '[]' | tr ',' '\n' | head -n 1)
 
-# 4. Update variables.tf with your project ID and allowed region
-sed -i 's/project *=.*/project = "qwiklabs-gcp-03-c86dd09f3ca7"/' variables.tf
-sed -i 's/region *=.*/region = "us-east1"/' variables.tf
+if [ -z "$REGION" ]; then
+  echo "No allowed region found. Try using 'us' (multi-region)."
+  REGION="us"
+fi
 
-# 5. Initialize Terraform
+echo "Using REGION: $REGION"
+
+# Replace region in Terraform variable file
+sed -i "s/^  default = .*/  default = \"$REGION\"/" variables.tf
+
 terraform init
-
-# 6. Create execution plan
 terraform plan -out=tfplan
-
-# 7. Apply configuration (auto-approve)
 terraform apply -auto-approve tfplan
