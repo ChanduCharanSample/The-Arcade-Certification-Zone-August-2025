@@ -1,23 +1,31 @@
 #!/bin/bash
+set -e
+
+# Detect project
 PROJECT_ID=$(gcloud config get-value project)
 
-# Fetch allowed locations
-gcloud org-policies describe constraints/gcp.resourceLocations \
-  --project=$PROJECT_ID \
-  --format="value(listPolicy.allowedValues)" > allowed_regions.txt
+# Get allowed regions from Org Policy
+ALLOWED_REGIONS=$(gcloud org-policies describe constraints/gcp.resourceLocations \
+  --project="$PROJECT_ID" \
+  --format="value(listPolicy.allowedValues)" 2>/dev/null)
 
-REGION=$(cat allowed_regions.txt | tr -d '[]' | tr ',' '\n' | head -n 1)
+# Extract first allowed region (remove 'in:' prefix)
+REGION=$(echo "$ALLOWED_REGIONS" | sed 's/,/\n/g' | head -n 1 | sed 's/in://')
 
-if [ -z "$REGION" ]; then
-  echo "No allowed region found. Try using 'us' (multi-region)."
-  REGION="us"
+if [[ -z "$REGION" ]]; then
+  echo "No allowed region found, defaulting to us-east1"
+  REGION="us-east1"
 fi
 
-echo "Using REGION: $REGION"
+echo "Using region: $REGION"
 
-# Replace region in Terraform variable file
-sed -i "s/^  default = .*/  default = \"$REGION\"/" variables.tf
+# Patch main.tf to use var.region instead of hardcoded region
+sed -i 's/region *= *"us-[a-z0-9-]*"/region = var.region/' main.tf || true
 
-terraform init
+# Patch variables.tf default region
+sed -i "s/default *= *\"us-[a-z0-9-]*\"/default = \"$REGION\"/" variables.tf || true
+
+# Terraform init & apply
+terraform init -upgrade
 terraform plan -out=tfplan
 terraform apply -auto-approve tfplan
